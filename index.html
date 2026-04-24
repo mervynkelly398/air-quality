@@ -1,167 +1,185 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Air Quality Monitor | 空气质量可视化</title>
+    <title>EcoCity Monitor | 大気環境可視化システム</title>
     <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { text-align: center; color: #2c3e50; }
-        .search-box { display: flex; justify-content: center; margin-bottom: 30px; }
-        input { padding: 12px; width: 60%; border: 1px solid #ccc; border-radius: 6px 0 0 6px; font-size: 16px; outline: none; }
-        button { padding: 12px 24px; background-color: #3498db; color: white; border: none; border-radius: 0 6px 6px 0; cursor: pointer; font-size: 16px; transition: 0.3s; }
-        button:hover { background-color: #2980b9; }
-        .dashboard { display: flex; justify-content: space-around; margin-bottom: 30px; text-align: center; }
-        .card { background: #fdfdfd; padding: 20px; border-radius: 8px; width: 30%; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border: 1px solid #eee; }
-        .card h3 { margin-top: 0; color: #7f8c8d; font-size: 14px; }
-        .value { font-size: 28px; font-weight: bold; color: #2c3e50; margin: 10px 0; }
-        .alert { background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 30px; font-weight: bold; display: none; }
-        #chart { width: 100%; height: 400px; }
-        .loading { text-align: center; color: #666; display: none; }
+        :root {
+            --primary-color: #2ecc71;
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+        }
+        body { font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: var(--text-color); }
+        .container { max-width: 900px; margin: 0 auto; background: var(--card-bg); padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        
+        /* 标题部分 */
+        .header { text-align: center; margin-bottom: 40px; }
+        .header h1 { font-size: 2.2rem; color: #1a535c; margin-bottom: 10px; }
+        .header p { color: #7f8c8d; font-size: 1rem; }
+        .sdg-badge { display: inline-block; background: #e67e22; color: white; padding: 4px 12px; border-radius: 50px; font-size: 0.8rem; margin-top: 10px; }
+
+        /* 搜索框 */
+        .search-box { display: flex; justify-content: center; margin-bottom: 40px; }
+        input { padding: 15px 20px; width: 60%; border: 2px solid #e0e0e0; border-radius: 12px 0 0 12px; font-size: 16px; outline: none; transition: border 0.3s; }
+        input:focus { border-color: var(--primary-color); }
+        button { padding: 15px 30px; background-color: var(--primary-color); color: white; border: none; border-radius: 0 12px 12px 0; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
+        button:hover { background-color: #27ae60; }
+
+        /* 环保建议卡片 */
+        .eco-advice { background-color: #e8f8f5; border-left: 5px solid var(--primary-color); padding: 20px; border-radius: 12px; margin-bottom: 30px; display: none; }
+        .eco-advice h3 { margin: 0 0 10px 0; font-size: 1.1rem; color: #16a085; }
+
+        /* 数据展示面板 */
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .card { background: #fff; padding: 25px; border-radius: 15px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+        .card h3 { margin-top: 0; color: #95a5a6; font-size: 0.9rem; letter-spacing: 1px; }
+        .value { font-size: 2.5rem; font-weight: bold; margin: 15px 0; color: #2c3e50; }
+        .unit { font-size: 0.9rem; color: #7f8c8d; font-weight: normal; }
+
+        /* 图表 */
+        #chart { width: 100%; height: 400px; margin-top: 20px; }
+        
+        .footer { text-align: center; margin-top: 50px; font-size: 0.8rem; color: #bdc3c7; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🌍 Air Quality Monitor</h1>
+    <div class="header">
+        <h1>🌍 EcoCity Monitor</h1>
+        <p>持続可能な都市のための大気質モニタリングシステム</p>
+        <span class="sdg-badge">SDGs Goal 11 & 13</span>
+    </div>
     
     <div class="search-box">
-        <input type="text" id="cityInput" placeholder="请输入城市名称 (例如: Osaka, Tokyo, Beijing)" value="Osaka">
-        <button onclick="fetchData()">查询</button>
+        <input type="text" id="cityInput" placeholder="都市名を入力 (例: Osaka, Tokyo)" value="Osaka">
+        <button onclick="fetchData()">データ取得</button>
     </div>
 
-    <div id="alertBox" class="alert">
-        ⚠️ 提示：当前空气质量较差，建议出门佩戴口罩！
+    <div id="ecoAdvice" class="eco-advice">
+        <h3 id="adviceTitle">🌱 環境に優しい行動提案</h3>
+        <p id="adviceText">都市の空気を守るために、私たちにできることを考えましょう。</p>
     </div>
-
-    <div id="loading" class="loading">正在加载传感器数据...</div>
 
     <div class="dashboard" id="dashboard" style="display: none;">
         <div class="card">
-            <h3>空气质量指数 (AQI)</h3>
+            <h3>空気質指数 (AQI)</h3>
             <div class="value" id="aqiValue">--</div>
-            <div id="aqiDesc" style="font-size: 14px;">--</div>
+            <div id="aqiDesc" style="font-weight: bold;">--</div>
         </div>
         <div class="card">
-            <h3>PM2.5 浓度</h3>
-            <div class="value" id="pm25Value">-- <span style="font-size: 14px">μg/m³</span></div>
+            <h3>PM2.5 濃度</h3>
+            <div class="value" id="pm25Value">-- <span class="unit">μg/m³</span></div>
         </div>
         <div class="card">
-            <h3>温湿度 (Temp / Hum)</h3>
-            <div class="value" id="tempHumValue">--</div>
+            <h3>温湿度 / 気圧</h3>
+            <div id="weatherDetails" style="font-size: 1.1rem; line-height: 1.6;">--</div>
         </div>
     </div>
 
     <div id="chart"></div>
+
+    <div class="footer">
+        Data provided by OpenWeather API | Developed for SDGs Project
+    </div>
 </div>
 
 <script>
-    // ⚠️ 注意：请在 OpenWeather 官网免费注册并替换为你的 API Key
+    // ⚠️ 注意：ここにあなたのAPIキーを入力してください
     const API_KEY = '1a0fd88653c4e3b3b106b148929fc0f6'; 
     let myChart = echarts.init(document.getElementById('chart'));
 
     async function fetchData() {
         const city = document.getElementById('cityInput').value.trim();
-        if (!city) {
-            alert('请输入城市名称！');
+        if (!city || API_KEY === 'YOUR_OPENWEATHER_API_KEY') {
+            alert('都市名を入力、またはAPIキーを確認してください。');
             return;
         }
-
-        if (API_KEY === 'OpenWeather 官网免费注册并替换为你的 API Key') {
-            alert('请先在代码中填入你的 OpenWeather API Key！');
-            return;
-        }
-
-        document.getElementById('loading').style.display = 'block';
-        document.getElementById('dashboard').style.display = 'none';
 
         try {
-            // 1. 获取城市的经纬度 (Geocoding API)
+            // 1. ジオコーディング (都市名から座標を取得)
             const geoRes = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${city}&limit=1&appid=${API_KEY}`);
             const geoData = await geoRes.json();
-            
-            if (geoData.length === 0) {
-                alert('未找到该城市，请检查拼写。');
-                document.getElementById('loading').style.display = 'none';
-                return;
-            }
+            if (geoData.length === 0) return alert('都市が見つかりません');
             const { lat, lon } = geoData[0];
 
-            // 2. 获取当前天气 (温度、湿度)
-            const weatherRes = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`);
+            // 2. 現在の天気と空気質
+            const [weatherRes, aqiRes] = await Promise.all([
+                fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`),
+                fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`)
+            ]);
+            
             const weatherData = await weatherRes.json();
-            document.getElementById('tempHumValue').innerText = `${weatherData.main.temp}°C / ${weatherData.main.humidity}%`;
-
-            // 3. 获取当前空气质量 (Current Air Pollution API)
-            const aqiRes = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`);
             const aqiData = await aqiRes.json();
-            
-            const currentAqi = aqiData.list[0].main.aqi; // 1=Good, 2=Fair, 3=Moderate, 4=Poor, 5=Very Poor
-            const currentPm25 = aqiData.list[0].components.pm2_5;
-            
-            // 更新看板数据
-            document.getElementById('aqiValue').innerText = currentAqi;
-            document.getElementById('pm25Value').innerHTML = `${currentPm25} <span style="font-size: 14px">μg/m³</span>`;
-            
-            // 空气质量评级与口罩提醒逻辑
-            const aqiDescMap = { 1: '优 (Good)', 2: '良 (Fair)', 3: '中 (Moderate)', 4: '差 (Poor)', 5: '极差 (Very Poor)' };
-            document.getElementById('aqiDesc').innerText = aqiDescMap[currentAqi];
-            
-            if (currentAqi >= 3) {
-                document.getElementById('alertBox').style.display = 'block';
-            } else {
-                document.getElementById('alertBox').style.display = 'none';
-            }
 
-            // 4. 获取历史/预测空气质量用于绘制折线图 (Forecast Air Pollution API)
+            // 看板の更新
+            updateDashboard(weatherData, aqiData);
+
+            // 3. 予測データの取得とチャート描画
             const forecastRes = await fetch(`https://api.openweathermap.org/data/2.5/air_pollution/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}`);
             const forecastData = await forecastRes.json();
-
-            // 提取前20个数据点绘制图表
-            const chartData = forecastData.list.slice(0, 20);
-            const timeLabels = chartData.map(item => {
-                let date = new Date(item.dt * 1000);
-                return `${date.getMonth()+1}-${date.getDate()} ${date.getHours()}:00`;
-            });
-            const pm25Trend = chartData.map(item => item.components.pm2_5);
-
-            renderChart(city, timeLabels, pm25Trend);
-
-            document.getElementById('loading').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'flex';
+            renderChart(city, forecastData.list.slice(0, 24));
 
         } catch (error) {
             console.error(error);
-            alert('获取数据失败，请检查网络或API Key。');
-            document.getElementById('loading').style.display = 'none';
+            alert('データの取得に失敗しました。');
         }
     }
 
-    function renderChart(city, times, data) {
+    function updateDashboard(weather, aqiWrap) {
+        const aqi = aqiWrap.list[0].main.aqi;
+        const pm25 = aqiWrap.list[0].components.pm2_5;
+        
+        document.getElementById('aqiValue').innerText = aqi;
+        document.getElementById('pm25Value').innerHTML = `${pm25} <span class="unit">μg/m³</span>`;
+        document.getElementById('weatherDetails').innerHTML = 
+            `🌡 ${weather.main.temp}°C<br>💧 ${weather.main.humidity}%<br>⏲ ${weather.main.pressure} hPa`;
+
+        const aqiTexts = { 
+            1: { txt: '非常に良い (Very Good)', color: '#2ecc71', advice: '今日は空気がとても綺麗です！自転車や徒歩で移動して、低炭素な生活を楽しみましょう。' },
+            2: { txt: '良い (Good)', color: '#f1c40f', advice: '良好な空気質です。公共交通機関を利用して、この環境を維持しましょう。' },
+            3: { txt: '普通 (Moderate)', color: '#e67e22', advice: '少し汚れが目立ちます。近距離の移動は徒歩を心がけ、排気ガス削減に協力しましょう。' },
+            4: { txt: '悪い (Poor)', color: '#e74c3c', advice: '空気質が低下しています。敏感な方は外出時のマスク着用を推奨します。' },
+            5: { txt: '非常に悪い (Very Poor)', color: '#9b59b6', advice: '深刻な大気汚染です。不要不急の外出を控え、窓を閉めて身を守りましょう。' }
+        };
+
+        const currentStatus = aqiTexts[aqi];
+        const descEl = document.getElementById('aqiDesc');
+        descEl.innerText = currentStatus.txt;
+        descEl.style.color = currentStatus.color;
+        
+        // アドバイスの更新
+        document.getElementById('adviceText').innerText = currentStatus.advice;
+        document.getElementById('ecoAdvice').style.display = 'block';
+        document.getElementById('dashboard').style.display = 'grid';
+    }
+
+    function renderChart(city, list) {
+        const times = list.map(item => {
+            const date = new Date(item.dt * 1000);
+            return `${date.getHours()}:00`;
+        });
+        const pm25Data = list.map(item => item.components.pm2_5);
+        const no2Data = list.map(item => item.components.no2);
+
         const option = {
-            title: { text: `${city} - PM2.5 预测趋势`, left: 'center' },
+            title: { text: `${city} - 24時間の推移予測`, left: 'center' },
             tooltip: { trigger: 'axis' },
-            xAxis: { 
-                type: 'category', 
-                data: times,
-                axisLabel: { rotate: 45 } // 标签倾斜防重叠
-            },
-            yAxis: { type: 'value', name: 'PM2.5 (μg/m³)' },
-            series: [{
-                data: data,
-                type: 'line',
-                smooth: true, // 平滑曲线
-                areaStyle: { opacity: 0.2 }, // 底部阴影加分项
-                itemStyle: { color: '#3498db' }
-            }]
+            legend: { data: ['PM2.5', 'NO2 (窒素酸化物)'], bottom: 0 },
+            xAxis: { type: 'category', data: times },
+            yAxis: { type: 'value', name: 'μg/m³' },
+            series: [
+                { name: 'PM2.5', data: pm25Data, type: 'line', smooth: true, itemStyle: {color: '#3498db'} },
+                { name: 'NO2 (窒素酸化物)', data: no2Data, type: 'line', smooth: true, itemStyle: {color: '#e74c3c'} }
+            ]
         };
         myChart.setOption(option);
     }
 
-    // 监听窗口大小变化，图表自适应
-    window.addEventListener('resize', () => { myChart.resize(); });
+    window.onresize = () => myChart.resize();
 </script>
 
 </body>
